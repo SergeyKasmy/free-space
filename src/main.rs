@@ -4,6 +4,7 @@ use color_eyre::{
     eyre::{bail, WrapErr},
     Result,
 };
+use humansize::{format_size, BINARY};
 use serde::Deserialize;
 
 enum Cmd {
@@ -14,7 +15,7 @@ enum Cmd {
 #[derive(Deserialize, Debug)]
 struct Device {
     device_type: String,
-    free: i64,
+    free: u64,
     mount_point: String,
     fs_type: String,
     // #[serde(rename = "device")]
@@ -22,13 +23,13 @@ struct Device {
     // #[serde(rename = "type")]
     // kind: String,
     // opts: String,
-    // total: i64,
-    // used: i64,
-    // inodes: i64,
-    // inodes_free: i64,
-    // inodes_used: i64,
-    // blocks: i64,
-    // block_size: i64,
+    // total: u64,
+    // used: u64,
+    // inodes: u64,
+    // inodes_free: u64,
+    // inodes_used: u64,
+    // blocks: u64,
+    // block_size: u64,
 }
 
 fn main() -> Result<()> {
@@ -39,7 +40,7 @@ fn main() -> Result<()> {
     };
 
     let duf = Command::new("duf")
-        .arg("--json")
+        .arg("-json")
         .output()
         .wrap_err("Couldn't open duf")?;
 
@@ -68,7 +69,7 @@ fn main() -> Result<()> {
     match cmd {
         Cmd::ListAll => {
             for dev in devices {
-                println!("{}: {}", dev.mount_point, dev.free);
+                println!("{}: {}", dev.mount_point, format_size(dev.free, BINARY));
             }
         }
         Cmd::Max => {
@@ -77,7 +78,7 @@ fn main() -> Result<()> {
                 .min_by_key(|dev| dev.free)
                 .expect("checked for .is_empty() just up above");
 
-            println!("{}: {}", min.mount_point, min.free);
+            println!("{}: {}", min.mount_point, format_size(min.free, BINARY));
         }
     }
 
