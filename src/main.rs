@@ -1,4 +1,4 @@
-use std::{collections::HashSet, process::Command};
+use std::{collections::HashSet, convert::Infallible, process::Command, str::FromStr};
 
 use argh::FromArgs;
 use color_eyre::{
@@ -34,8 +34,11 @@ struct All {}
 struct Min {
     /// ignore
     #[argh(option)]
-    ignore: Option<String>,
+    ignore: Option<IgnoreList>,
 }
+
+#[derive(Debug)]
+struct IgnoreList(Vec<String>);
 
 #[derive(Deserialize, Hash, PartialEq, Eq, Debug)]
 struct Device {
@@ -77,7 +80,7 @@ fn main() -> Result<()> {
                 })
                 .collect::<Vec<_>>();
 
-            devices.sort_by_key(|x| x.free);
+            devices.sort_by_key(|x| (x.free, x.mount_point.clone()));
 
             devices
         }
@@ -108,7 +111,7 @@ fn main() -> Result<()> {
                         return true;
                     };
 
-                    dev.mount_point != ignore.as_str()
+                    !ignore.0.contains(&dev.mount_point)
                 })
                 .min_by_key(|dev| dev.free)
                 .expect("checked for .is_empty() just up above");
@@ -118,4 +121,12 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+impl FromStr for IgnoreList {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.split(',').map(|x| x.to_owned()).collect()))
+    }
 }
