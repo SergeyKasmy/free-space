@@ -1,5 +1,6 @@
-use std::{env::args, process::Command};
+use std::process::Command;
 
+use argh::FromArgs;
 use color_eyre::{
     eyre::{bail, WrapErr},
     Result,
@@ -7,10 +8,34 @@ use color_eyre::{
 use humansize::{format_size, BINARY};
 use serde::Deserialize;
 
-enum Cmd {
-    ListAll,
-    Max,
+/// show free space
+#[derive(FromArgs, Debug)]
+struct Args {
+    /// action
+    #[argh(subcommand)]
+    action: Option<Action>,
+
+    /// ignore
+    #[argh(option)]
+    ignore: Option<String>,
 }
+
+#[derive(FromArgs, Debug)]
+#[argh(subcommand)]
+enum Action {
+    All(All),
+    Min(Min),
+}
+
+/// all
+#[derive(FromArgs, Debug)]
+#[argh(subcommand, name = "all")]
+struct All {}
+
+/// min
+#[derive(FromArgs, Debug)]
+#[argh(subcommand, name = "min")]
+struct Min {}
 
 #[derive(Deserialize, Debug)]
 struct Device {
@@ -33,11 +58,8 @@ struct Device {
 }
 
 fn main() -> Result<()> {
-    #[allow(clippy::wildcard_in_or_patterns)]
-    let cmd = match args().nth(1).as_deref() {
-        Some("all") => Cmd::ListAll,
-        Some("max") | _ => Cmd::Max,
-    };
+    let args: Args = argh::from_env();
+    let act = args.action.unwrap_or(Action::Min(Min {}));
 
     let duf = Command::new("duf")
         .arg("-json")
@@ -66,15 +88,22 @@ fn main() -> Result<()> {
         bail!("No devices found");
     }
 
-    match cmd {
-        Cmd::ListAll => {
+    match act {
+        Action::All(_) => {
             for dev in devices {
                 println!("{}: {}", dev.mount_point, format_size(dev.free, BINARY));
             }
         }
-        Cmd::Max => {
+        Action::Min(_) => {
             let min = devices
                 .iter()
+                .filter(|dev| {
+                    let Some(ignore) = &args.ignore else {
+                        return true;
+                    };
+
+                    dev.mount_point != ignore.as_str()
+                })
                 .min_by_key(|dev| dev.free)
                 .expect("checked for .is_empty() just up above");
 
