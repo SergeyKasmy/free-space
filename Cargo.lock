@@ -110,6 +110,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "free-space"
+version = "0.1.0"
+dependencies = [
+ "argh",
+ "color-eyre",
+ "humansize",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "gimli"
 version = "0.27.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -167,17 +178,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7810e0be55b428ada41041c41f32c9f1a42817901b4ccf45fa3d4b6561e74c7"
 dependencies = [
  "adler",
-]
-
-[[package]]
-name = "no-free-space-notifier"
-version = "0.1.0"
-dependencies = [
- "argh",
- "color-eyre",
- "humansize",
- "serde",
- "serde_json",
 ]
 
 [[package]]

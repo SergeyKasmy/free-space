@@ -1,4 +1,4 @@
-use std::{collections::HashSet, convert::Infallible, process::Command, str::FromStr};
+use std::{collections::HashSet, convert::Infallible, path::Path, process::Command, str::FromStr};
 
 use argh::FromArgs;
 use color_eyre::{
@@ -76,7 +76,18 @@ fn main() -> Result<()> {
             let mut devices = devices
                 .into_iter()
                 .filter(|x| {
-                    x.device_type == "local" && x.fs_type != "ramfs" && x.fs_type != "autofs"
+                    // keep local drives
+                    x.device_type == "local"
+						// remove ramfs
+                        && x.fs_type != "ramfs"
+						// and autofs drives (they are usually duplicates)
+                        && x.fs_type != "autofs"
+                        && Path::new(&x.mount_point)
+                            .file_name()
+							// keep if does't have a file name / remove if starts with a dot
+                            .map_or(true, |file_name| {
+                                !file_name.to_string_lossy().starts_with('.')
+                            })
                 })
                 .collect::<Vec<_>>();
 
