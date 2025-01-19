@@ -62,9 +62,7 @@ struct Device {
 
 fn main() -> Result<()> {
     let args: Args = argh::from_env();
-    let act = args
-        .action
-        .unwrap_or_else(|| Action::Min(Min { ignore: None }));
+    let act = args.action.unwrap_or(Action::Min(Min { ignore: None }));
 
     let duf = Command::new("duf")
         .arg("-json")
@@ -85,9 +83,7 @@ fn main() -> Result<()> {
                         && Path::new(&x.mount_point)
                             .file_name()
 							// keep if does't have a file name / remove if starts with a dot
-                            .map_or(true, |file_name| {
-                                !file_name.to_string_lossy().starts_with('.')
-                            })
+							.is_none_or(|file_name| !file_name.to_string_lossy().starts_with('.'))
                 })
                 .collect::<Vec<_>>();
 
@@ -138,6 +134,6 @@ impl FromStr for IgnoreList {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.split(',').map(|x| x.to_owned()).collect()))
+        Ok(Self(s.split(',').map(ToOwned::to_owned).collect()))
     }
 }
